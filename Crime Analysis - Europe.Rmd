@@ -1,0 +1,135 @@
+---
+title: "Assignment 1"
+author: "Ranjith_Dhanaraj_19200041"
+date: "10/9/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Loading the dataset 'EurostatCrime2017.csv'
+
+```{r}
+csv_file <- read.csv("EurostatCrime2017.csv", row.names = 1, header = TRUE)
+```
+
+Finding the size and structure of the dataset
+
+```{r}
+dim(csv_file)
+str(csv_file)
+```
+Normalize and add a new column called AllTheft
+
+```{r}
+normalized_data <- csv_file
+normalized_data[is.na(csv_file)] <- 0
+csv_file$AllTheft <- normalized_data$Theft + 
+  normalized_data$Theft_of_a_motorized_land_vehicle + normalized_data$Burglary + 
+  normalized_data$Burglary_of_private_residential_premises
+colnames(csv_file)
+```
+
+Removing the columns Theft, Theft of a motorized land vehicle, Burglary, and Burglary of private residential premises.
+
+```{r}
+csv_file[, c('Theft', 'Theft_of_a_motorized_land_vehicle',
+             'Burglary_of_private_residential_premises',
+             'Burglary')] <- NULL
+colnames(csv_file)
+```
+
+Finding countries with NA value
+
+```{r}
+countries_with_na <- csv_file[rowSums(is.na(csv_file)) > 0, ]
+rownames(countries_with_na)
+```
+
+Removing Countries with missing data
+
+```{r}
+csv_file_new <- na.omit(csv_file)
+csv_file_new
+```
+
+Finding the number of observations and variables in this new dataframe
+
+```{r}
+dim(csv_file_new)
+```
+
+Finding the 3 most crimes in Ireland with the new dataset
+
+```{r}
+ireland_info <- csv_file_new["Ireland", ]
+crimes_sorted <- sort(ireland_info, decreasing = TRUE)
+top_three_crimes <- c(crimes_sorted[1:3])
+top_three_crimes
+```
+
+Finding country with highset overall offences
+
+```{r}
+csv_file_new$all_offense <- rowSums(csv_file_new)
+rownames(csv_file_new[which.max(csv_file_new$all_offense), ])
+```
+
+
+We can still figure out how dangerous a country is.
+Theft and burglary are mostly non-violent, if we categorize crimes into 3 categories : Violent, Non-violent and Drug Abuse, we can get a better picture of which country is being plagued by a particular type of crime.
+
+# Graph 1 gives us the count as well the type without scaling.
+```{r ggplot}
+library(ggplot2)
+country_names = c(row.names(csv_file_new))
+
+AllCrimes <- csv_file_new$all_offense
+ViolentCrime <- csv_file_new$all_offense - 
+  csv_file_new$AllTheft - 
+  csv_file_new$Unlawful_acts_involving_controlled_drugs_or_precursors
+NonViolentCrime <- csv_file_new$AllTheft
+DrugAbuse <- csv_file_new$Unlawful_acts_involving_controlled_drugs_or_precursors
+crimes <- c(ViolentCrime, NonViolentCrime, DrugAbuse)
+types <- c(rep("ViolentCrime",length(ViolentCrime)), 
+           rep("NonViolentCrime", length(NonViolentCrime)), 
+           rep("DrugAbuse", length(DrugAbuse)))
+
+plotting_data <- data.frame(country_names, crimes, types)
+
+plt <- ggplot(plotting_data, aes(country_names, crimes))
+
+plt + geom_bar(stat = "identity", aes(fill = types)) + xlab("Countries") + ylab("Count") + 
+  ggtitle("Types of Crimes by Country") + theme_bw() + theme(axis.text.x = element_text(size = 4, angle = 90))
+```
+# Graph 2, where everything is scaled to 100, to get better representation of types of crimes 
+
+```{r}
+plt <- ggplot(plotting_data, aes(country_names, (crimes/AllCrimes * 100)))
+
+plt + geom_bar(stat = "identity", aes(fill = types)) +
+xlab("Countries") + ylab("Percentage") + 
+  ggtitle("Types of Crimes by Country") + theme_bw() + theme(axis.text.x = element_text(size = 4, angle = 90))
+```
+We can see here that even though countries like Finland, where lots of crimes occur, most of them tend to be nonviolent unlike in countries like Belgium, where even though the amount of crime is far less compared to Finland, the type of crime seems to be mostly violent. 
+This would make Belgium more dangerous than Finland purely because of the type of crime that occurs in this country.
+The same can be said for switzerland as well, where most of the crimes are non violent but there is an alarming number of crimes related to drugs as well.
+
+Belgium and Luxemborg seems to be the most violent.
+
+Estonia, Belgium and Luxemborg also seem to have problems with cases related to drugs.
+
+Provided we get the population of each nation we can get an accurate picture of the crime rate since sheer numbers alone isn't enough to represent the crime statistics of a nation.
+
+
+
+
+
+
+
+
+
